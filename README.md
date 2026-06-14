@@ -28,19 +28,19 @@ fully implementing the Preprocess → Parse → Rewrite → Render four-stage pi
 ### As a CLI tool
 
 ```bash
-go install github.com/yourusername/GoStreamingMarkdown@latest
+go install github.com/startvibecoding/GoStreamingMarkdown@latest
 ```
 
 ### As a library
 
 ```bash
-go get github.com/yourusername/GoStreamingMarkdown
+go get github.com/startvibecoding/GoStreamingMarkdown
 ```
 
 ### Build from source
 
 ```bash
-git clone https://github.com/yourusername/GoStreamingMarkdown.git
+git clone https://github.com/startvibecoding/GoStreamingMarkdown.git
 cd GoStreamingMarkdown
 go build -o GoStreamingMarkdown .
 ```

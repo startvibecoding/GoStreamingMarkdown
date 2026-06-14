@@ -28,19 +28,19 @@
 ### 作为 CLI 工具
 
 ```bash
-go install github.com/yourusername/GoStreamingMarkdown@latest
+go install github.com/startvibecoding/GoStreamingMarkdown@latest
 ```
 
 ### 作为库使用
 
 ```bash
-go get github.com/yourusername/GoStreamingMarkdown
+go get github.com/startvibecoding/GoStreamingMarkdown
 ```
 
 ### 从源码构建
 
 ```bash
-git clone https://github.com/yourusername/GoStreamingMarkdown.git
+git clone https://github.com/startvibecoding/GoStreamingMarkdown.git
 cd GoStreamingMarkdown
 go build -o GoStreamingMarkdown .
 ```
