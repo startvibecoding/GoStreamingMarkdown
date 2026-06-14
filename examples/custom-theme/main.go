@@ -4,7 +4,7 @@ package main
 import (
 	"fmt"
 
-	"GoStreamingMarkdown/renderer"
+	"github.com/startvibecoding/GoStreamingMarkdown/renderer"
 )
 
 func main() {

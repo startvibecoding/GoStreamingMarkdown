@@ -5,7 +5,7 @@ This example demonstrates how to use GoStreamingMarkdown as a library in your Go
 ## Installation
 
 ```bash
-go get github.com/yourusername/GoStreamingMarkdown
+go get github.com/startvibecoding/GoStreamingMarkdown
 ```
 
 ## Quick Start
@@ -15,7 +15,7 @@ package main
 
 import (
     "fmt"
-    gsm "GoStreamingMarkdown"
+    "github.com/startvibecoding/GoStreamingMarkdown/gsm"
 )
 
 func main() {

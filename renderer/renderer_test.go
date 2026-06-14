@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"GoStreamingMarkdown/parser"
+	"github.com/startvibecoding/GoStreamingMarkdown/parser"
 )
 
 // ── Helpers ─────────────────────────────────────────────────────────────────

@@ -15,8 +15,8 @@
 package gsm
 
 import (
-	"GoStreamingMarkdown/parser"
-	"GoStreamingMarkdown/renderer"
+	"github.com/startvibecoding/GoStreamingMarkdown/parser"
+	"github.com/startvibecoding/GoStreamingMarkdown/renderer"
 )
 
 // Stream provides incremental Markdown rendering for streaming use cases.

@@ -136,7 +136,7 @@ package main
 
 import (
     "fmt"
-    "GoStreamingMarkdown/gsm"
+    "github.com/startvibecoding/GoStreamingMarkdown/gsm"
 )
 
 func main() {
@@ -158,8 +158,8 @@ package main
 
 import (
     "fmt"
-    "GoStreamingMarkdown/parser"
-    "GoStreamingMarkdown/renderer"
+    "github.com/startvibecoding/GoStreamingMarkdown/parser"
+    "github.com/startvibecoding/GoStreamingMarkdown/renderer"
 )
 
 func main() {

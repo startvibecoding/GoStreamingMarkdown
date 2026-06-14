@@ -18,8 +18,8 @@ import (
 	"strings"
 	"time"
 
-	"GoStreamingMarkdown/parser"
-	"GoStreamingMarkdown/renderer"
+	"github.com/startvibecoding/GoStreamingMarkdown/parser"
+	"github.com/startvibecoding/GoStreamingMarkdown/renderer"
 )
 
 func main() {

@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"GoStreamingMarkdown/gsm"
+	"github.com/startvibecoding/GoStreamingMarkdown/gsm"
 )
 
 func main() {

@@ -15,7 +15,7 @@ import (
 	"fmt"
 	"strings"
 
-	"GoStreamingMarkdown/parser"
+	"github.com/startvibecoding/GoStreamingMarkdown/parser"
 )
 
 // ── ANSI Escape Codes ───────────────────────────────────────────────────────
