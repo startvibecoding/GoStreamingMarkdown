@@ -1,70 +1,72 @@
 # GoStreamingMarkdown
 
-**零依赖** 的 Go CLI 流式 Markdown → ANSI 终端渲染器。
+[中文文档](README_zh.md)
 
-从 Swift 项目的 [SwiftStreamingMarkdown](https://github.com/SwiftStreamingMarkdown) 库重构而来，
-完整实现了 Preprocess → Parse → Rewrite → Render 四阶段管线。支持流式渲染模式。
+**Zero-dependency** Go CLI streaming Markdown → ANSI terminal renderer.
 
-## 特性
+Refactored from the Swift project [SwiftStreamingMarkdown](https://github.com/SwiftStreamingMarkdown),
+fully implementing the Preprocess → Parse → Rewrite → Render four-stage pipeline. Supports streaming rendering mode.
 
-| 类别 | 支持 |
-|------|------|
-| **标题** | ATX `# ~ ######`，带颜色分级 |
-| **强调** | `*italic*`, `**bold**`, `~~strikethrough~~` |
-| **代码** | 行内 `` `code` ``，围栏代码块 ` ```lang ``` `，带语言标签 |
-| **列表** | 有序 `1.`，无序 `- * +`，任务列表 `- [x]` |
-| **引用** | `> blockquote`，支持嵌套 |
-| **表格** | `| a | b |` GFM 表格，带边框 |
-| **链接** | `[text](url)`, `<autolink>` |
-| **图片** | `![alt](url)` 终端渲染 |
-| **分隔线** | `---`, `***`, `___` |
-| **LaTeX 数学** | `$$block$$`, `$inline$`, `\(paren\)`，预处理为代码块/行内代码 |
-| **流式渲染** | `--stream` 模式，投机性 emphasis 闭合（防抖动） |
+## Features
 
-## 安装
+| Category | Support |
+|----------|---------|
+| **Headings** | ATX `# ~ ######` with colored levels |
+| **Emphasis** | `*italic*`, `**bold**`, `~~strikethrough~~` |
+| **Code** | Inline `` `code` ``, fenced code blocks ` ```lang ``` ` with language label |
+| **Lists** | Ordered `1.`, unordered `- * +`, task lists `- [x]` |
+| **Blockquotes** | `> blockquote` with nesting support |
+| **Tables** | `\| a \| b \|` GFM tables with borders |
+| **Links** | `[text](url)`, `<autolink>` |
+| **Images** | `![alt](url)` terminal rendering |
+| **Horizontal Rules** | `---`, `***`, `___` |
+| **LaTeX Math** | `$$block$$`, `$inline$`, `\(paren\)` preprocessed to code blocks/inline code |
+| **Streaming** | `--stream` mode with speculative emphasis closure (anti-jitter) |
+
+## Installation
 
 ```bash
 cd GoStreamingMarkdown
 go build -o GoStreamingMarkdown .
 ```
 
-**零外部依赖** — 仅使用 Go 标准库。
+**Zero external dependencies** — uses only Go standard library.
 
-## 使用
+## Usage
 
 ```bash
-# 渲染文件
+# Render a file
 GoStreamingMarkdown README.md
 
-# 从管道读取
+# Read from pipe
 cat README.md | GoStreamingMarkdown
 
-# 流式模式（实时渲染，增量更新）
+# Streaming mode (real-time rendering, incremental updates)
 cat stream.txt | GoStreamingMarkdown --stream --delay 100ms
 
-# 指定主题和宽度
+# Specify theme and width
 GoStreamingMarkdown -t light -w 100 doc.md
 
-# 渲染 Markdown 字符串
+# Render Markdown string
 echo '# Hello **world**' | GoStreamingMarkdown
 ```
 
-### 参数
+### Flags
 
-| 参数 | 说明 |
-|------|------|
-| `-h, --help` | 显示帮助 |
-| `-s, --stream` | 流式模式（原地重绘） |
-| `-d, --delay <dur>` | 流式更新间隔（如 `50ms`, `1s`） |
-| `-t, --theme <name>` | 主题：`dark`（默认）或 `light` |
-| `-w, --width <cols>` | 终端宽度（默认 80） |
+| Flag | Description |
+|------|-------------|
+| `-h, --help` | Show help |
+| `-s, --stream` | Streaming mode (in-place redraw) |
+| `-d, --delay <dur>` | Stream update interval (e.g. `50ms`, `1s`) |
+| `-t, --theme <name>` | Theme: `dark` (default) or `light` |
+| `-w, --width <cols>` | Terminal width (default: 80) |
 
-## 架构
+## Architecture
 
-完整复刻 Swift 项目的四阶段管线：
+Complete replication of the Swift project's four-stage pipeline:
 
 ```
-输入文本
+Input Text
   │
   ▼
 ┌─────────────────────┐
@@ -74,7 +76,7 @@ echo '# Hello **world**' | GoStreamingMarkdown
 └──────────┬──────────┘
            ▼
 ┌─────────────────────┐
-│ 2. Parse (AST)       │  CommonMark 兼容解析器
+│ 2. Parse (AST)       │  CommonMark compatible parser
 │                      │  Block: heading, paragraph, code,
 │                      │  blockquote, list, table, hr
 │                      │  Inline: emphasis, strong, code,
@@ -82,37 +84,37 @@ echo '# Hello **world**' | GoStreamingMarkdown
 └──────────┬──────────┘
            ▼
 ┌─────────────────────┐
-│ 3. Rewrite           │  投机性 emphasis 闭合
-│ (speculative)        │  防止流式渲染时文本抖动
+│ 3. Rewrite           │  Speculative emphasis closure
+│ (speculative)        │  Prevents text jitter during streaming
 └──────────┬──────────┘
            ▼
 ┌─────────────────────┐
-│ 4. Render (ANSI)     │  AST → ANSI 终端输出
-│                      │  深色/浅色主题
-│                      │  Unicode box-drawing 字符
+│ 4. Render (ANSI)     │  AST → ANSI terminal output
+│                      │  Dark/Light themes
+│                      │  Unicode box-drawing characters
 └─────────────────────┘
 ```
 
-## 项目结构
+## Project Structure
 
 ```
 GoStreamingMarkdown/
-├── main.go              # CLI 入口
-├── go.mod               # Go 模块定义（零依赖）
-├── gsm/                 # 便利 API 包
-│   └── gsm.go           # 简化的流式渲染 API
+├── main.go              # CLI entry point
+├── go.mod               # Go module definition (zero dependencies)
+├── gsm/                 # Convenience API package
+│   └── gsm.go           # Simplified streaming rendering API
 ├── parser/
-│   ├── node.go          # AST 节点类型定义
-│   └── parser.go        # Markdown 解析器 + LaTeX 预处理 + 重写器
+│   ├── node.go          # AST node type definitions
+│   └── parser.go        # Markdown parser + LaTeX preprocessor + rewriter
 ├── renderer/
-│   └── renderer.go      # ANSI 终端渲染器 + 主题系统
-├── examples/            # 使用示例
+│   └── renderer.go      # ANSI terminal renderer + theme system
+├── examples/            # Usage examples
 └── README.md
 ```
 
-## 作为库使用
+## Library Usage
 
-### 方式一：使用 gsm 便利包（推荐）
+### Option 1: Using gsm convenience package (Recommended)
 
 ```go
 package main
@@ -123,18 +125,18 @@ import (
 )
 
 func main() {
-    // 一次性渲染
+    // One-shot rendering
     output := gsm.Render("# Hello **world**", 80, nil)
     fmt.Println(output)
     
-    // 流式渲染
+    // Streaming rendering
     stream := gsm.NewStream(80, nil)
     stream.Update("partial markdown...")
     fmt.Print(stream.Output())
 }
 ```
 
-### 方式二：直接使用 parser/renderer
+### Option 2: Using parser/renderer directly
 
 ```go
 package main
@@ -148,39 +150,39 @@ import (
 func main() {
     src := "# Hello **world**"
     
-    // 解析
+    // Parse
     doc := parser.Parse(src, parser.DefaultOption())
     
-    // 渲染
+    // Render
     theme := renderer.DefaultTheme()
     r := renderer.New(theme, 80)
     fmt.Println(r.Render(doc))
     
-    // 或一步完成
+    // Or one-step
     fmt.Println(renderer.Render(src, 80, theme))
 }
 ```
 
-### 流式解析
+### Streaming Parsing
 
 ```go
-opt := parser.StreamOption() // 启用投机性重写
+opt := parser.StreamOption() // Enable speculative rewrite
 doc := parser.Parse(partialText, opt)
 ```
 
-更多示例请参考 `examples/library-usage/`
+For more examples, see `examples/library-usage/`
 
-## 从 Swift 到 Go 的映射
+## Swift to Go Mapping
 
-| Swift 组件 | Go 对应 |
-|-----------|---------|
+| Swift Component | Go Equivalent |
+|----------------|---------------|
 | `LaTexPreProcessor` | `parser.preprocessLaTeX()` |
 | `swift-markdown` (cmark-gfm) | `parser.Parse()` |
 | `PartialEmphasisRewriter` | `parser.rewriteSpeculative()` |
 | `MarkdownRenderable` | `parser.Node` AST |
 | `DocumentView` | `renderer.Render()` |
 | `MarkdownRenderConfig` + `Colors` | `renderer.Theme` |
-| `StreamedMarkdownSource` | `--stream` CLI 模式 |
+| `StreamedMarkdownSource` | `--stream` CLI mode |
 
 ## License
 
