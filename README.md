@@ -99,15 +99,42 @@ echo '# Hello **world**' | GoStreamingMarkdown
 GoStreamingMarkdown/
 ├── main.go              # CLI 入口
 ├── go.mod               # Go 模块定义（零依赖）
+├── gsm/                 # 便利 API 包
+│   └── gsm.go           # 简化的流式渲染 API
 ├── parser/
 │   ├── node.go          # AST 节点类型定义
 │   └── parser.go        # Markdown 解析器 + LaTeX 预处理 + 重写器
 ├── renderer/
 │   └── renderer.go      # ANSI 终端渲染器 + 主题系统
+├── examples/            # 使用示例
 └── README.md
 ```
 
 ## 作为库使用
+
+### 方式一：使用 gsm 便利包（推荐）
+
+```go
+package main
+
+import (
+    "fmt"
+    "GoStreamingMarkdown/gsm"
+)
+
+func main() {
+    // 一次性渲染
+    output := gsm.Render("# Hello **world**", 80, nil)
+    fmt.Println(output)
+    
+    // 流式渲染
+    stream := gsm.NewStream(80, nil)
+    stream.Update("partial markdown...")
+    fmt.Print(stream.Output())
+}
+```
+
+### 方式二：直接使用 parser/renderer
 
 ```go
 package main
@@ -140,6 +167,8 @@ func main() {
 opt := parser.StreamOption() // 启用投机性重写
 doc := parser.Parse(partialText, opt)
 ```
+
+更多示例请参考 `examples/library-usage/`
 
 ## 从 Swift 到 Go 的映射
 
