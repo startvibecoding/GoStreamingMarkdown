@@ -41,6 +41,22 @@ func assertHasLine(t *testing.T, s, line string) {
 	t.Errorf("expected output to have line containing %q", line)
 }
 
+func assertNoBackgroundANSI(t *testing.T, s string) {
+	t.Helper()
+	backgroundCodes := []string{
+		"\033[40m", "\033[41m", "\033[42m", "\033[43m",
+		"\033[44m", "\033[45m", "\033[46m", "\033[47m",
+		"\033[48;", "\033[100m", "\033[101m", "\033[102m",
+		"\033[103m", "\033[104m", "\033[105m", "\033[106m",
+		"\033[107m",
+	}
+	for _, code := range backgroundCodes {
+		if strings.Contains(s, code) {
+			t.Fatalf("expected no background ANSI code %q in %q", code, s)
+		}
+	}
+}
+
 // ── Heading Rendering ───────────────────────────────────────────────────────
 
 func TestRenderHeadingH1(t *testing.T) {
@@ -377,6 +393,20 @@ func TestRenderCodeSpan(t *testing.T) {
 	assertContains(t, out, "fmt.Println")
 }
 
+func TestRenderCodeSpanNoBackgroundOrPadding(t *testing.T) {
+	out := render("Use `fmt.Println` to print", 80)
+	assertNoBackgroundANSI(t, out)
+	stripped := strings.TrimSpace(StripANSI(out))
+	if stripped != "Use fmt.Println to print" {
+		t.Fatalf("expected code span without extra padding, got %q", stripped)
+	}
+}
+
+func TestRenderCodeBlockNoBackground(t *testing.T) {
+	out := render("```go\nfmt.Println(\"hello\")\n```", 80)
+	assertNoBackgroundANSI(t, out)
+}
+
 func TestRenderLink(t *testing.T) {
 	out := renderStripped("[Go](https://go.dev)", 80)
 	assertContains(t, out, "Go")
@@ -490,6 +520,11 @@ func TestWrapANSIZeroWidth(t *testing.T) {
 	if result != input {
 		t.Error("zero width should return input unchanged")
 	}
+}
+
+func TestRenderThematicBreakNarrowWidth(t *testing.T) {
+	out := renderStripped("---", 1)
+	assertContains(t, out, "─")
 }
 
 // ── Theme Tests ─────────────────────────────────────────────────────────────

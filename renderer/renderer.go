@@ -109,7 +109,7 @@ func DefaultTheme() *Theme {
 		BlockQuote:      ansiItalic + ansiFgBrightBlack,
 		BlockQuoteBar:   ansiFgBrightBlack,
 		CodeText:        ansiFgBrightWhite,
-		CodeBg:          ansiBgBrightBlack,
+		CodeBg:          "",
 		CodeLang:        ansiFgBrightBlack + ansiDim,
 		TableBorder:     ansiFgBrightBlack,
 		TableHeader:     ansiBold + ansiFgBrightWhite,
@@ -121,7 +121,7 @@ func DefaultTheme() *Theme {
 		Bold:            ansiBold,
 		Italic:          ansiItalic,
 		Code:            ansiFgBrightRed,
-		CodeBgInline:    ansiBgBrightBlack,
+		CodeBgInline:    "",
 		Link:            ansiFgBrightBlue + ansiUnderline,
 		LinkURL:         ansiFgBrightBlack + ansiDim,
 		Strike:          ansiStrike,
@@ -145,7 +145,7 @@ func LightTheme() *Theme {
 		BlockQuote:      ansiItalic + ansiFgBlack,
 		BlockQuoteBar:   ansiFgBlack,
 		CodeText:        ansiFgBlack,
-		CodeBg:          ansiBgWhite,
+		CodeBg:          "",
 		CodeLang:        ansiFgBlack + ansiDim,
 		TableBorder:     ansiFgBlack,
 		TableHeader:     ansiBold + ansiFgBlack,
@@ -157,7 +157,7 @@ func LightTheme() *Theme {
 		Bold:            ansiBold,
 		Italic:          ansiItalic,
 		Code:            ansiFgRed,
-		CodeBgInline:    ansiBgWhite,
+		CodeBgInline:    "",
 		Link:            ansiFgBlue + ansiUnderline,
 		LinkURL:         ansiFgBlack + ansiDim,
 		Strike:          ansiStrike,
@@ -262,14 +262,9 @@ func (r *Renderer) renderNode(n *parser.Node) {
 		r.renderInlineContent(n)
 		r.popStyle()
 	case parser.NodeCodeSpan:
-		r.buf.WriteString(r.theme.CodeBgInline)
-		r.buf.WriteString(" ")
-		r.buf.WriteString(r.theme.Code)
+		r.pushStyle(r.theme.Code)
 		r.buf.WriteString(n.Text)
-		r.buf.WriteString(ansiReset)
-		r.buf.WriteString(r.theme.CodeBgInline)
-		r.buf.WriteString(" ")
-		r.buf.WriteString(ansiReset)
+		r.popStyle()
 	case parser.NodeLink:
 		r.pushStyle(r.theme.Link)
 		r.renderInlineContent(n)
@@ -402,7 +397,7 @@ func (r *Renderer) renderCodeBox(lang string, lines []string) {
 	// Code lines
 	for _, line := range lines {
 		r.buf.WriteString(r.theme.TableBorder + "│")
-		r.buf.WriteString(r.theme.CodeBg + " " + r.theme.CodeText + line)
+		r.buf.WriteString(" " + r.theme.CodeText + line)
 		pw := innerW - 1 - visualWidth(line)
 		if pw > 0 {
 			r.buf.WriteString(strings.Repeat(" ", pw))
@@ -435,7 +430,11 @@ func (r *Renderer) renderBlockquote(n *parser.Node) {
 }
 
 func (r *Renderer) renderThematicBreak() {
-	r.buf.WriteString(r.theme.Horizontal + strings.Repeat("─", r.width-2) + ansiReset + "\n\n")
+	w := r.width - 2
+	if w < 1 {
+		w = 1
+	}
+	r.buf.WriteString(r.theme.Horizontal + strings.Repeat("─", w) + ansiReset + "\n\n")
 }
 
 func (r *Renderer) renderList(n *parser.Node) {
