@@ -57,6 +57,48 @@ func assertNoBackgroundANSI(t *testing.T, s string) {
 	}
 }
 
+func assertTableLinesWithinWidth(t *testing.T, s string, width int) {
+	t.Helper()
+	for _, line := range strings.Split(s, "\n") {
+		if !strings.ContainsAny(line, "│┌┬┐├┼┤└┴┘") {
+			continue
+		}
+		if w := visualWidth(line); w > width {
+			t.Fatalf("table line exceeds width %d: got %d: %q", width, w, line)
+		}
+	}
+}
+
+func assertTableLinesEqualWidth(t *testing.T, s string) {
+	t.Helper()
+	expected := -1
+	for _, line := range strings.Split(s, "\n") {
+		if !strings.ContainsAny(line, "│┌┬┐├┼┤└┴┘") {
+			continue
+		}
+		w := visualWidth(line)
+		if expected < 0 {
+			expected = w
+			continue
+		}
+		if w != expected {
+			t.Fatalf("table line width mismatch: expected %d, got %d: %q", expected, w, line)
+		}
+	}
+}
+
+func assertBoxLinesEqualWidth(t *testing.T, s string, width int) {
+	t.Helper()
+	for _, line := range strings.Split(s, "\n") {
+		if !strings.ContainsAny(line, "│┌├└┐┤┘") {
+			continue
+		}
+		if w := visualWidth(line); w != width {
+			t.Fatalf("box line width mismatch: expected %d, got %d: %q", width, w, line)
+		}
+	}
+}
+
 // ── Heading Rendering ───────────────────────────────────────────────────────
 
 func TestRenderHeadingH1(t *testing.T) {
@@ -149,6 +191,13 @@ func TestRenderCodeBlockNoLanguage(t *testing.T) {
 	assertContains(t, out, "┌")
 }
 
+func TestRenderCodeBlockNoLanguageCJKWidth(t *testing.T) {
+	src := "```\n中文内容\n```"
+	out := renderStripped(src, 40)
+	assertContains(t, out, "中文内容")
+	assertBoxLinesEqualWidth(t, out, 40)
+}
+
 func TestRenderCodeBlockMultiline(t *testing.T) {
 	src := "```python\ndef hello():\n    print('hello')\n    return True\n```"
 	out := renderStripped(src, 80)
@@ -192,14 +241,15 @@ func TestRenderIndentedCodeBlock(t *testing.T) {
 func TestRenderCodeBlockWidthRespected(t *testing.T) {
 	src := "```go\nfmt.Println(\"hello\")\n```"
 	out := renderStripped(src, 50)
-	// Box width should be terminal width - 2
-	for _, line := range strings.Split(out, "\n") {
-		// Lines with box chars should be within width
-		if strings.Contains(line, "│") || strings.Contains(line, "┌") || strings.Contains(line, "└") {
-			// Box lines should be present
-		}
-	}
 	assertContains(t, out, "┌")
+	assertBoxLinesEqualWidth(t, out, 50)
+}
+
+func TestRenderCodeBlockCJKWidthRespected(t *testing.T) {
+	src := "```text\n中文代码块\n```"
+	out := renderStripped(src, 50)
+	assertContains(t, out, "中文代码块")
+	assertBoxLinesEqualWidth(t, out, 50)
 }
 
 func TestRenderMultipleCodeBlocks(t *testing.T) {
@@ -226,8 +276,8 @@ func TestRenderCodeBlockLongLine(t *testing.T) {
 	longLine := strings.Repeat("x", 200)
 	src := "```\n" + longLine + "\n```"
 	out := renderStripped(src, 80)
-	// Should contain the line (may overflow the box, but shouldn't crash)
 	assertContains(t, out, "x")
+	assertBoxLinesEqualWidth(t, out, 80)
 }
 
 // ── Blockquote Rendering ────────────────────────────────────────────────────
@@ -327,6 +377,15 @@ func TestRenderTableBasic(t *testing.T) {
 	assertContains(t, out, "│")
 }
 
+func TestRenderSmallTableCJKWidth(t *testing.T) {
+	src := "| 名称 | 状态 |\n|------|------|\n| 服务 | 正常 |"
+	out := renderStripped(src, 40)
+	assertContains(t, out, "名称")
+	assertContains(t, out, "正常")
+	assertTableLinesWithinWidth(t, out, 40)
+	assertTableLinesEqualWidth(t, out)
+}
+
 func TestRenderTableWithFormatting(t *testing.T) {
 	src := "| **bold** | *italic* |\n|----------|----------|\n| `code` | [link](url) |"
 	out := renderStripped(src, 80)
@@ -350,6 +409,50 @@ func TestRenderTableColumnAlignment(t *testing.T) {
 	out := renderStripped(src, 80)
 	assertContains(t, out, "Short")
 	assertContains(t, out, "Very Long Column")
+}
+
+func TestRenderTableLongManyRows(t *testing.T) {
+	// Test table with many rows (long table)
+	src := "| ID | Name | Value |\n|----|------|-------|\n"
+	for i := 0; i < 50; i++ {
+		src += "| " + string(rune('0'+i%10)) + " | Item " + string(rune('A'+i%26)) + " | Value " + string(rune('0'+i%10)) + " |\n"
+	}
+	out := renderStripped(src, 80)
+	// Should render all rows and not crash
+	assertContains(t, out, "ID")
+	assertContains(t, out, "Name")
+	assertContains(t, out, "Value")
+	assertContains(t, out, "Item")
+}
+
+func TestRenderTableWideManyColumnsLongContent(t *testing.T) {
+	// Test wide table with many columns and long content in each cell
+	src := `| Command | Description | Default | Required | Example | Notes |
+|---------|-------------|---------|----------|---------|-------|
+| --input | Path to input file that contains the data to be processed by the application | none | yes | /path/to/input.txt | Must be a valid readable text file with proper formatting |
+| --output | Path to output file where the processed results will be written by the application | stdout | no | /path/to/output.json | Directory must exist and be writable by current user |
+| --config | Path to configuration file in JSON format that contains application settings | ~/.config/app.json | no | /etc/app/config.json | Supports environment variable expansion |
+| --verbose | Enable verbose debug output to see what's happening under the hood when running the application | false | no | true | When enabled logs are written to stderr |
+| --timeout | Timeout in seconds after which the application will automatically terminate if not completed | 300 | no | 600 | Must be a positive integer value greater than zero |
+`
+	out := renderStripped(src, 100)
+	assertContains(t, out, "Command")
+	assertContains(t, out, "Description")
+	assertContains(t, out, "--input")
+	assertContains(t, out, "Path to input")
+	assertContains(t, out, "file that")
+	assertContains(t, out, "Timeout")
+	assertTableLinesWithinWidth(t, out, 100)
+	assertTableLinesEqualWidth(t, out)
+}
+
+func TestRenderTableWrapsLongUnbrokenCell(t *testing.T) {
+	src := "| Key | Value |\n|-----|-------|\n| token | SupercalifragilisticexpialidociousSupercalifragilisticexpialidocious |"
+	out := renderStripped(src, 40)
+	assertContains(t, out, "token")
+	assertContains(t, out, "Supercalif")
+	assertTableLinesWithinWidth(t, out, 40)
+	assertTableLinesEqualWidth(t, out)
 }
 
 // ── Thematic Break Rendering ────────────────────────────────────────────────
@@ -630,10 +733,18 @@ func TestVisualWidthEmpty(t *testing.T) {
 }
 
 func TestVisualWidthUnicode(t *testing.T) {
-	// Each CJK character is 1 rune (simplified model treats as 1 column)
 	w := visualWidth("你好")
-	if w != 2 {
-		t.Errorf("expected 2, got %d", w)
+	if w != 4 {
+		t.Errorf("expected 4, got %d", w)
+	}
+}
+
+func TestVisualWidthCombiningAndEmoji(t *testing.T) {
+	if w := visualWidth("e\u0301"); w != 1 {
+		t.Errorf("expected combining mark width 1, got %d", w)
+	}
+	if w := visualWidth("🙂"); w != 2 {
+		t.Errorf("expected emoji width 2, got %d", w)
 	}
 }
 

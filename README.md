@@ -13,10 +13,10 @@ fully implementing the Preprocess → Parse → Rewrite → Render four-stage pi
 |----------|---------|
 | **Headings** | ATX `# ~ ######` with colored levels |
 | **Emphasis** | `*italic*`, `**bold**`, `~~strikethrough~~` |
-| **Code** | Inline `` `code` ``, fenced code blocks ` ```lang ``` ` with language label |
+| **Code** | Inline `` `code` ``, fenced code blocks ` ```lang ``` ` with language label and automatic line wrapping |
 | **Lists** | Ordered `1.`, unordered `- * +`, task lists `- [x]` |
 | **Blockquotes** | `> blockquote` with nesting support |
-| **Tables** | `\| a \| b \|` GFM tables with borders |
+| **Tables** | `\| a \| b \|` GFM tables with borders, automatic width fitting, and cell content wrapping |
 | **Links** | `[text](url)`, `<autolink>` |
 | **Images** | `![alt](url)` terminal rendering |
 | **Horizontal Rules** | `---`, `***`, `___` |

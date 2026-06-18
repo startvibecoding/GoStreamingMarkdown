@@ -113,6 +113,31 @@ for num in fibonacci(10):
 | Left | Center | Right |
 | a | b | c |
 
+### 长表格（多行）
+
+| ID | Name | Description | Status |
+|----|------|-------------|--------|
+| 1 | User Authentication | Handles user login and registration with JWT tokens and password hashing | Completed |
+| 2 | Data Processing | Processes large CSV/JSON files and converts between different formats | In Progress |
+| 3 | API Gateway | Routes requests to appropriate backend services with load balancing | Planned |
+| 4 | Database Migration | Automatic schema migration and version control for SQL databases | Completed |
+| 5 | Caching Layer | Redis-based caching system for frequently accessed data to improve performance | In Progress |
+| 6 | Background Jobs | Asynchronous task processing with retry mechanism and failure handling | Completed |
+| 7 | Logging & Monitoring | Structured logging with OpenTelemetry integration for distributed tracing | Planned |
+| 8 | Rate Limiting | API rate limiting based on client IP and user quotas to prevent abuse | In Progress |
+| 9 | File Storage | S3-compatible object storage integration with local filesystem fallback | Completed |
+| 10 | WebSocket | Real-time bidirectional communication for chat and notification systems | Planned |
+
+### 宽表格（多列+长内容）
+
+| Command | Description | Default | Required | Example | Notes |
+|---------|-------------|---------|----------|---------|-------|
+| --input | Path to input file that contains the data to be processed by the application | none | yes | /path/to/input.txt | Must be a valid readable text file with proper formatting |
+| --output | Path to output file where the processed results will be written by the application | stdout | no | /path/to/output.json | Directory must exist and be writable by current user |
+| --config | Path to configuration file in JSON format that contains application settings | ~/.config/app.json | no | /etc/app/config.json | Supports environment variable expansion |
+| --verbose | Enable verbose debug output to see what's happening under the hood when running | false | no | true | When enabled logs are written to stderr |
+| --timeout | Timeout in seconds after which the application will automatically terminate | 300 | no | 600 | Must be a positive integer value greater than zero |
+
 ## 链接和图片
 
 访问 [Go 官网](https://go.dev) 了解更多。

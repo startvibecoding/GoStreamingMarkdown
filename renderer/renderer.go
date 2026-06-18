@@ -371,23 +371,28 @@ func (r *Renderer) renderCodeBox(lang string, lines []string) {
 	if boxW < 20 {
 		boxW = 20
 	}
-	innerW := boxW - 2
 
 	// Top border
 	r.buf.WriteString(r.theme.TableBorder)
 	r.buf.WriteString("┌" + strings.Repeat("─", boxW) + "┐")
 	r.buf.WriteString(ansiReset + "\n")
 
-	// Language label
-	if lang != "" {
-		label := " " + lang + " "
+	drawCodeLine := func(line string, style string) {
 		r.buf.WriteString(r.theme.TableBorder + "│")
-		r.buf.WriteString(r.theme.CodeLang + label)
-		padding := innerW - visualWidth(label)
+		r.buf.WriteString(" " + style + line)
+		padding := boxW - 1 - visualWidth(line)
 		if padding > 0 {
 			r.buf.WriteString(strings.Repeat(" ", padding))
 		}
 		r.buf.WriteString(ansiReset + r.theme.TableBorder + "│" + ansiReset + "\n")
+	}
+
+	// Language label
+	if lang != "" {
+		label := lang + " "
+		for _, line := range hardWrapANSI(label, boxW-1) {
+			drawCodeLine(line, r.theme.CodeLang)
+		}
 
 		r.buf.WriteString(r.theme.TableBorder)
 		r.buf.WriteString("├" + strings.Repeat("─", boxW) + "┤")
@@ -396,13 +401,9 @@ func (r *Renderer) renderCodeBox(lang string, lines []string) {
 
 	// Code lines
 	for _, line := range lines {
-		r.buf.WriteString(r.theme.TableBorder + "│")
-		r.buf.WriteString(" " + r.theme.CodeText + line)
-		pw := innerW - 1 - visualWidth(line)
-		if pw > 0 {
-			r.buf.WriteString(strings.Repeat(" ", pw))
+		for _, wrapped := range hardWrapANSI(line, boxW-1) {
+			drawCodeLine(wrapped, r.theme.CodeText)
 		}
-		r.buf.WriteString(ansiReset + r.theme.TableBorder + "│" + ansiReset + "\n")
 	}
 
 	// Bottom border
@@ -570,6 +571,7 @@ func (r *Renderer) renderTable(n *parser.Node) {
 			colWidths[i] = 3
 		}
 	}
+	colWidths = fitTableColumnWidths(colWidths, r.width)
 
 	drawSep := func(left, mid, right, fill string) {
 		r.buf.WriteString(r.theme.TableBorder + left)
@@ -583,24 +585,40 @@ func (r *Renderer) renderTable(n *parser.Node) {
 	}
 
 	drawRow := func(cells []string, isHeader bool) {
-		r.buf.WriteString(r.theme.TableBorder + "│")
+		wrappedCells := make([][]string, colCount)
+		rowHeight := 1
 		for i := 0; i < colCount; i++ {
 			text := ""
 			if i < len(cells) {
 				text = cells[i]
 			}
-			pad := colWidths[i] - visualWidth(text)
-			if pad < 0 {
-				pad = 0
+			wrapped := wrapTableCell(text, colWidths[i])
+			wrappedCells[i] = wrapped
+			if len(wrapped) > rowHeight {
+				rowHeight = len(wrapped)
 			}
-			if isHeader {
-				r.buf.WriteString(r.theme.TableHeaderText + " " + text + strings.Repeat(" ", pad+1) + ansiReset)
-			} else {
-				r.buf.WriteString(" " + text + strings.Repeat(" ", pad+1) + ansiReset)
-			}
-			r.buf.WriteString(r.theme.TableBorder + "│")
 		}
-		r.buf.WriteString(ansiReset + "\n")
+
+		for lineIdx := 0; lineIdx < rowHeight; lineIdx++ {
+			r.buf.WriteString(r.theme.TableBorder + "│")
+			for i := 0; i < colCount; i++ {
+				text := ""
+				if lineIdx < len(wrappedCells[i]) {
+					text = wrappedCells[i][lineIdx]
+				}
+				pad := colWidths[i] - visualWidth(text)
+				if pad < 0 {
+					pad = 0
+				}
+				if isHeader {
+					r.buf.WriteString(r.theme.TableHeaderText + " " + text + strings.Repeat(" ", pad+1) + ansiReset)
+				} else {
+					r.buf.WriteString(" " + text + strings.Repeat(" ", pad+1) + ansiReset)
+				}
+				r.buf.WriteString(r.theme.TableBorder + "│")
+			}
+			r.buf.WriteString(ansiReset + "\n")
+		}
 	}
 
 	drawSep("┌", "┬", "┐", "─")
@@ -614,6 +632,130 @@ func (r *Renderer) renderTable(n *parser.Node) {
 	}
 	drawSep("└", "┴", "┘", "─")
 	r.buf.WriteString("\n")
+}
+
+func fitTableColumnWidths(desired []int, maxTableWidth int) []int {
+	widths := append([]int(nil), desired...)
+	if len(widths) == 0 || maxTableWidth <= 0 {
+		return widths
+	}
+
+	colCount := len(widths)
+	available := maxTableWidth - (3*colCount + 1)
+	minWidth := 3
+	if available < colCount*minWidth {
+		minWidth = 1
+	}
+	if available < colCount*minWidth {
+		for i := range widths {
+			widths[i] = 1
+		}
+		return widths
+	}
+
+	total := 0
+	for i, w := range widths {
+		if widths[i] < minWidth {
+			widths[i] = minWidth
+			w = minWidth
+		}
+		total += w
+	}
+	if total <= available {
+		return widths
+	}
+
+	for i := range widths {
+		widths[i] = minWidth
+	}
+
+	remaining := available - colCount*minWidth
+	for remaining > 0 {
+		progressed := false
+		for i := range widths {
+			if widths[i] >= desired[i] {
+				continue
+			}
+			widths[i]++
+			remaining--
+			progressed = true
+			if remaining == 0 {
+				break
+			}
+		}
+		if !progressed {
+			break
+		}
+	}
+
+	return widths
+}
+
+func wrapTableCell(text string, maxWidth int) []string {
+	if text == "" {
+		return []string{""}
+	}
+	if maxWidth <= 0 {
+		return []string{text}
+	}
+
+	wrapped := wrapANSI(text, maxWidth, "", 0)
+	var lines []string
+	for _, line := range strings.Split(wrapped, "\n") {
+		if visualWidth(line) <= maxWidth {
+			lines = append(lines, line)
+			continue
+		}
+		lines = append(lines, hardWrapANSI(line, maxWidth)...)
+	}
+	if len(lines) == 0 {
+		return []string{""}
+	}
+	return lines
+}
+
+func hardWrapANSI(text string, maxWidth int) []string {
+	if maxWidth <= 0 || visualWidth(text) <= maxWidth {
+		return []string{text}
+	}
+
+	var lines []string
+	var line bytes.Buffer
+	col := 0
+	activeStyles := ""
+
+	flushLine := func() {
+		lines = append(lines, line.String())
+		line.Reset()
+		col = 0
+		if activeStyles != "" {
+			line.WriteString(activeStyles)
+		}
+	}
+
+	for _, seg := range parseANSI(text) {
+		if !seg.visible {
+			line.WriteString(seg.text)
+			if seg.text == ansiReset {
+				activeStyles = ""
+			} else {
+				activeStyles += seg.text
+			}
+			continue
+		}
+		for _, ch := range seg.text {
+			chW := runeVisualWidth(ch)
+			if col > 0 && col+chW > maxWidth {
+				flushLine()
+			}
+			line.WriteRune(ch)
+			col += chW
+		}
+	}
+	if line.Len() > 0 || len(lines) == 0 {
+		lines = append(lines, line.String())
+	}
+	return lines
 }
 
 // ── Inline Renderers ────────────────────────────────────────────────────────
@@ -743,16 +885,17 @@ func wrapANSI(text string, maxWidth int, indent string, lineSpacing int) string 
 		for _, ch := range seg.text {
 			if ch == ' ' || ch == '\t' {
 				flushWord()
-				if col+1 > availWidth && lineHasContent {
+				chW := runeVisualWidth(ch)
+				if col+chW > availWidth && lineHasContent {
 					flushLine()
 				} else {
 					line.WriteRune(ch)
-					col++
+					col += chW
 					lineHasContent = true
 				}
 			} else {
 				word.WriteRune(ch)
-				wordCol++
+				wordCol += runeVisualWidth(ch)
 			}
 		}
 	}
@@ -763,7 +906,7 @@ func wrapANSI(text string, maxWidth int, indent string, lineSpacing int) string 
 
 // ── Utilities ───────────────────────────────────────────────────────────────
 
-// visualWidth returns the display width of a string, ignoring ANSI escape sequences.
+// visualWidth returns the terminal display width of a string, ignoring ANSI escape sequences.
 func visualWidth(s string) int {
 	w := 0
 	inEsc := false
@@ -778,9 +921,49 @@ func visualWidth(s string) int {
 			}
 			continue
 		}
-		w++
+		w += runeVisualWidth(r)
 	}
 	return w
+}
+
+func runeVisualWidth(r rune) int {
+	if r == 0 {
+		return 0
+	}
+	if r < 32 || (r >= 0x7f && r < 0xa0) {
+		return 0
+	}
+	if isCombiningRune(r) {
+		return 0
+	}
+	if isWideRune(r) {
+		return 2
+	}
+	return 1
+}
+
+func isCombiningRune(r rune) bool {
+	return (r >= 0x0300 && r <= 0x036f) ||
+		(r >= 0x1ab0 && r <= 0x1aff) ||
+		(r >= 0x1dc0 && r <= 0x1dff) ||
+		(r >= 0x20d0 && r <= 0x20ff) ||
+		(r >= 0xfe00 && r <= 0xfe0f) ||
+		(r >= 0xfe20 && r <= 0xfe2f)
+}
+
+func isWideRune(r rune) bool {
+	return (r >= 0x1100 && r <= 0x115f) ||
+		(r >= 0x2329 && r <= 0x232a) ||
+		(r >= 0x2e80 && r <= 0xa4cf) ||
+		(r >= 0xac00 && r <= 0xd7a3) ||
+		(r >= 0xf900 && r <= 0xfaff) ||
+		(r >= 0xfe10 && r <= 0xfe19) ||
+		(r >= 0xfe30 && r <= 0xfe6f) ||
+		(r >= 0xff00 && r <= 0xff60) ||
+		(r >= 0xffe0 && r <= 0xffe6) ||
+		(r >= 0x1f300 && r <= 0x1f64f) ||
+		(r >= 0x1f900 && r <= 0x1f9ff) ||
+		(r >= 0x20000 && r <= 0x3fffd)
 }
 
 // StripANSI removes all ANSI escape sequences from a string.
