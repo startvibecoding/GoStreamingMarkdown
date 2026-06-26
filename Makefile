@@ -97,7 +97,7 @@ run: build ## Build and run with example markdown.
 	@echo '# Hello **world**' | ./$(BINARY)
 
 .PHONY: demo
-demo: build ## Run demo with a rich markdown document.
+demo: build ## Run static and streaming demos.
 	@printf '%s\n' \
 		'# GoStreamingMarkdown Demo' '' \
 		'This is a **bold** and *italic* paragraph.' '' \
@@ -109,6 +109,16 @@ demo: build ## Run demo with a rich markdown document.
 		'---' '' \
 		'See [Go](https://go.dev).' \
 		| ./$(BINARY) -w $${COLUMNS:-80}
+	@echo
+	@echo 'Streaming SSE text demo in 2 seconds...'
+	@sleep 2
+	@( \
+		echo '已改回 `https://se.lab.bza.edu.cn`,编译通过。'; sleep 0.2; \
+		echo ''; sleep 0.15; \
+		echo '现在 baseURL 默认是 `https://se.lab.bza.edu.cn`,仍保留了 `OSCANNER_BASE_URL` 环境变量覆盖能力(需要时 `OSCANNER_BASE_URL=xxx go run .` 即可换地址)。'; sleep 0.2; \
+		echo ''; sleep 0.15; \
+		echo '需要注意:之前提交检查那步触发了 429 限流(每个 IP 5 小时内最多 3 次)。带上 `x-secret-token` 后仍被限流,说明该 token 在公网 443 入口未豁免限流。等限流窗口过去,或换个出口 IP,再跑 `/tmp/demo` 就能完整走完 1–5 步。要我现在重试一次看是否已解除限流吗?'; \
+	) | ./$(BINARY) --stream --delay 120ms -w $${COLUMNS:-80}
 
 .PHONY: demo-stream
 demo-stream: build ## Run streaming demo.
