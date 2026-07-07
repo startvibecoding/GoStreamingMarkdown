@@ -491,6 +491,42 @@ func TestRenderItalic(t *testing.T) {
 	}
 }
 
+func TestRenderItalicDoesNotLeakToAdjacentText(t *testing.T) {
+	tests := []struct {
+		name string
+		src  string
+		want string
+	}{
+		{
+			name: "both sides",
+			src:  "111*222*333",
+			want: "111\033[3m222\033[0m333",
+		},
+		{
+			name: "leading text",
+			src:  "111*222*",
+			want: "111\033[3m222\033[0m",
+		},
+		{
+			name: "trailing text",
+			src:  "*222*333",
+			want: "\033[3m222\033[0m333",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			out := render(tt.src, 80)
+			if !strings.Contains(out, tt.want) {
+				t.Fatalf("expected italic ANSI to be scoped as %q, got %q", tt.want, out)
+			}
+			if stripped := strings.TrimSpace(StripANSI(out)); stripped != strings.ReplaceAll(tt.src, "*", "") {
+				t.Fatalf("unexpected stripped output: %q", stripped)
+			}
+		})
+	}
+}
+
 func TestRenderCodeSpan(t *testing.T) {
 	out := renderStripped("Use `fmt.Println` to print", 80)
 	assertContains(t, out, "fmt.Println")

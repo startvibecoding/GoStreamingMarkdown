@@ -820,6 +820,26 @@ func TestInlineItalicUnderscore(t *testing.T) {
 	}
 }
 
+func TestInlineItalicAdjacentTextBoundaries(t *testing.T) {
+	doc := parse("111*222*333")
+	p := findNode(doc, NodeParagraph)
+	if p == nil {
+		t.Fatal("expected paragraph")
+	}
+	assertChildCount(t, p, 3)
+
+	if p.Children[0].Type != NodeText || p.Children[0].Text != "111" {
+		t.Fatalf("expected leading text 111, got type=%d text=%q", p.Children[0].Type, p.Children[0].Text)
+	}
+	if p.Children[1].Type != NodeEmphasis {
+		t.Fatalf("expected middle emphasis, got type=%d", p.Children[1].Type)
+	}
+	assertText(t, p.Children[1], "222")
+	if p.Children[2].Type != NodeText || p.Children[2].Text != "333" {
+		t.Fatalf("expected trailing text 333, got type=%d text=%q", p.Children[2].Type, p.Children[2].Text)
+	}
+}
+
 func TestInlineCodeSpan(t *testing.T) {
 	doc := parse("Use `fmt.Println` to print")
 	p := findNode(doc, NodeParagraph)
