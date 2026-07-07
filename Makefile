@@ -4,6 +4,7 @@ SHELL := /bin/bash
 
 BINARY  := GoStreamingMarkdown
 MODULE  := .
+GO      ?= go
 GOFLAGS :=
 
 .PHONY: help
@@ -47,6 +48,12 @@ test-parser: ## Run parser tests only.
 .PHONY: test-renderer
 test-renderer: ## Run renderer tests only.
 	go test ./renderer/... -v -count=1
+
+.PHONY: make-real-test
+make-real-test: ## Run tmux-backed real terminal tests.
+	@command -v tmux >/dev/null 2>&1 || { echo 'tmux not found. Install tmux to run real terminal tests.'; exit 1; }
+	@command -v "$(GO)" >/dev/null 2>&1 || { echo 'go not found. Set GO=/path/to/go and retry.'; exit 1; }
+	GO="$(GO)" $(GO) test -tags=realtest . -run '^TestRealTmux' -v -count=1
 
 .PHONY: test-race
 test-race: ## Run tests with race detector.
