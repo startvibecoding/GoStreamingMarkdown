@@ -9,6 +9,12 @@ import "strings"
 // ── AST Node Types ──────────────────────────────────────────────────────────
 
 // NodeType identifies the kind of AST node.
+//
+// Example:
+//
+//	doc := parser.Parse("text", parser.DefaultOption())
+//	head := doc.FindChild(parser.NodeHeading)
+//	fmt.Println(heading != nil) // false
 type NodeType int
 
 const (
@@ -44,6 +50,11 @@ const (
 )
 
 // Node is a single node in the Markdown AST.
+//
+// Example:
+//
+//	node := parser.NewNode(parser.NodeParagraph)
+//	fmt.Println(node.Type) // 1
 type Node struct {
 	Type     NodeType
 	Children []*Node
@@ -79,11 +90,24 @@ type Node struct {
 // ── Constructors ────────────────────────────────────────────────────────────
 
 // NewNode creates a new AST node of the given type.
+//
+// Example:
+//
+//	node := parser.NewNode(parser.NodeHeading)
+//	fmt.Println(node.Type) // 1
 func NewNode(t NodeType) *Node {
 	return &Node{Type: t}
 }
 
 // Append adds a child node.
+//
+// Example:
+//
+//	parent := parser.NewNode(parser.NodeParagraph)
+//	child := parser.NewNode(parser.NodeText)
+//	child.Text = "hello"
+//	parent.Append(child)
+//	fmt.Println(len(parent.Children)) // 1
 func (n *Node) Append(child *Node) {
 	child.Parent = n
 	n.Children = append(n.Children, child)
@@ -91,6 +115,16 @@ func (n *Node) Append(child *Node) {
 
 // Walk traverses the AST depth-first, calling fn for each node.
 // Return false from fn to stop traversal.
+//
+// Example:
+//
+//	doc := parser.Parse("# Title", parser.DefaultOption())
+//	count := 0
+//	doc.Walk(func(n *parser.Node) bool {
+//		count++
+//		return true
+//	})
+//	fmt.Println(count) // 3
 func (n *Node) Walk(fn func(*Node) bool) {
 	if !fn(n) {
 		return
@@ -104,6 +138,12 @@ func (n *Node) Walk(fn func(*Node) bool) {
 
 // ComputeIDs assigns stable IDs to all nodes by computing the path from root.
 // Each node's ID is the concatenation of its index-in-parent chain, e.g. "2-1".
+//
+// Example:
+//
+//	doc := parser.Parse("# Title\n\nPara.", parser.DefaultOption())
+//	parser.ComputeIDs(doc)
+//	fmt.Println(doc.ID) // "0"
 func ComputeIDs(root *Node) {
 	root.ID = "0"
 	computeIDsRec(root)
@@ -139,6 +179,11 @@ func itoa(i int) string {
 // ── Plain Text Extraction (mirrors Swift String+.swift extractPlainText) ────
 
 // TextContent recursively collects all text content from a node's children.
+//
+// Example:
+//
+//	doc := parser.Parse("Hello **world**", parser.DefaultOption())
+//	fmt.Println(doc.TextContent()) // "Hello world\n"
 func (n *Node) TextContent() string {
 	switch n.Type {
 	case NodeText:
@@ -219,16 +264,32 @@ func (n *Node) TextContent() string {
 }
 
 // IsBlock returns true if the node is a block-level element.
+//
+// Example:
+//
+//	doc := parser.Parse("text", parser.DefaultOption())
+//	fmt.Println(doc.IsBlock()) // true
 func (n *Node) IsBlock() bool {
 	return n.Type < 100
 }
 
 // IsInline returns true if the node is an inline-level element.
+//
+// Example:
+//
+//	doc := parser.Parse("text", parser.DefaultOption())
+//	fmt.Println(doc.IsInline()) // false
 func (n *Node) IsInline() bool {
 	return n.Type >= 100
 }
 
 // FindChild returns the first child matching the given type, or nil.
+//
+// Example:
+//
+//	doc := parser.Parse("# Hello", parser.DefaultOption())
+//	head := doc.FindChild(parser.NodeHeading)
+//	fmt.Println(heading != nil) // true
 func (n *Node) FindChild(t NodeType) *Node {
 	for _, c := range n.Children {
 		if c.Type == t {
@@ -239,6 +300,14 @@ func (n *Node) FindChild(t NodeType) *Node {
 }
 
 // IndexInParent returns this node's index in its parent's Children slice, or -1.
+//
+// Example:
+//
+//	doc := parser.Parse("# Title\n\nPara.", parser.DefaultOption())
+//	para := doc.FindChild(parser.NodeParagraph)
+//	if para != nil {
+//		fmt.Println(para.IndexInParent()) // 1
+//	}
 func (n *Node) IndexInParent() int {
 	if n.Parent == nil {
 		return -1
@@ -253,6 +322,12 @@ func (n *Node) IndexInParent() int {
 
 // RightmostDescendant returns the deepest last-child leaf node.
 // Mirrors Swift PartialEmphasisScanner's rightMostDescendant.
+//
+// Example:
+//
+//	doc := parser.Parse("# Title", parser.DefaultOption())
+//	leaf := doc.RightmostDescendant()
+//	fmt.Println(leaf.Type) // 100 (NodeText)
 func (n *Node) RightmostDescendant() *Node {
 	cur := n
 	for len(cur.Children) > 0 {

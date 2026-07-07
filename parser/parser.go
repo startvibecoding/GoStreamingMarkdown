@@ -211,12 +211,22 @@ func isPartialTable(text string) bool {
 // ── Public API ──────────────────────────────────────────────────────────────
 
 // ParseOption controls parsing behavior.
+//
+// Example:
+//
+//	opt := parser.DefaultOption()
+//	fmt.Println(opt.PreprocessLaTeX) // true
 type ParseOption struct {
 	SpeculativeRewrite bool
 	PreprocessLaTeX    bool
 }
 
 // DefaultOption returns sensible defaults.
+//
+// Example:
+//
+//	opt := parser.DefaultOption()
+//	fmt.Println(opt.SpeculativeRewrite) // false
 func DefaultOption() ParseOption {
 	return ParseOption{
 		SpeculativeRewrite: false,
@@ -225,6 +235,11 @@ func DefaultOption() ParseOption {
 }
 
 // StreamOption returns options suitable for streaming/incremental rendering.
+//
+// Example:
+//
+//	opt := parser.StreamOption()
+//	fmt.Println(opt.SpeculativeRewrite) // true
 func StreamOption() ParseOption {
 	return ParseOption{
 		SpeculativeRewrite: true,
@@ -233,6 +248,11 @@ func StreamOption() ParseOption {
 }
 
 // Parse parses markdown text into an AST.
+//
+// Example:
+//
+//	doc := parser.Parse("# Hello world", parser.DefaultOption())
+//	fmt.Println(doc.Children[0].Type) // prints 1 (NodeHeading)
 func Parse(src string, opt ParseOption) *Node {
 	if opt.PreprocessLaTeX {
 		src = preprocessLaTeX(src)

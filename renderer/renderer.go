@@ -63,6 +63,11 @@ const (
 
 // Theme defines ANSI styles for every Markdown element.
 // Mirrors Swift MarkdownRenderConfig with Typography + Colors.
+//
+// Example:
+//
+//	theme := renderer.DefaultTheme()
+//	fmt.Println(theme.Bold) // "\033[1m"
 type Theme struct {
 	Heading         string
 	Heading1        string
@@ -97,6 +102,11 @@ type Theme struct {
 }
 
 // DefaultTheme returns a dark-terminal-friendly theme.
+//
+// Example:
+//
+//	theme := renderer.DefaultTheme()
+//	fmt.Println(theme.Heading) // "\033[1m\033[96m"
 func DefaultTheme() *Theme {
 	return &Theme{
 		Heading:         ansiBold + ansiFgBrightCyan,
@@ -133,6 +143,11 @@ func DefaultTheme() *Theme {
 }
 
 // LightTheme returns a light-terminal-friendly theme.
+//
+// Example:
+//
+//	theme := renderer.LightTheme()
+//	fmt.Println(theme.Heading) // "\033[1m\033[36m"
 func LightTheme() *Theme {
 	return &Theme{
 		Heading:         ansiBold + ansiFgCyan,
@@ -170,6 +185,11 @@ func LightTheme() *Theme {
 
 // AutoTheme returns the default theme. Actual auto-detection is done in main.go
 // via COLORFGBG and TERM_PROGRAM environment variables.
+//
+// Example:
+//
+//	theme := renderer.AutoTheme()
+//	fmt.Println(theme.Heading) // "\033[1m\033[96m"
 func AutoTheme() *Theme {
 	return DefaultTheme()
 }
@@ -177,6 +197,12 @@ func AutoTheme() *Theme {
 // ── Renderer ────────────────────────────────────────────────────────────────
 
 // Renderer renders a Markdown AST to ANSI terminal output.
+//
+// Example:
+//
+//	doc := parser.Parse("Hello **world**", parser.DefaultOption())
+//	r := renderer.New(renderer.DefaultTheme(), 80)
+//	fmt.Println(r.Render(doc))
 type Renderer struct {
 	theme      *Theme
 	width      int
@@ -185,6 +211,11 @@ type Renderer struct {
 }
 
 // New creates a Renderer with the given theme and terminal width.
+//
+// Example:
+//
+//	r := renderer.New(nil, 80)
+//	fmt.Println(r != nil) // true
 func New(theme *Theme, width int) *Renderer {
 	if theme == nil {
 		theme = DefaultTheme()
@@ -196,6 +227,12 @@ func New(theme *Theme, width int) *Renderer {
 }
 
 // Render renders the entire document AST to an ANSI string.
+//
+// Example:
+//
+//	doc := parser.Parse("# Title", parser.DefaultOption())
+//	r := renderer.New(renderer.DefaultTheme(), 80)
+//	fmt.Println(r.Render(doc))
 func (r *Renderer) Render(doc *parser.Node) string {
 	r.buf.Reset()
 	r.renderChildren(doc)
@@ -967,6 +1004,11 @@ func isWideRune(r rune) bool {
 }
 
 // StripANSI removes all ANSI escape sequences from a string.
+//
+// Example:
+//
+//	plain := renderer.StripANSI("\033[1mhello\033[0m")
+//	fmt.Println(plain) // "hello"
 func StripANSI(s string) string {
 	var buf strings.Builder
 	inEsc := false
@@ -987,6 +1029,11 @@ func StripANSI(s string) string {
 }
 
 // Render is a convenience function: parse + render in one call.
+//
+// Example:
+//
+//	output := renderer.Render("hello world", 80, nil)
+//	fmt.Println(output)
 func Render(src string, width int, theme *Theme) string {
 	doc := parser.Parse(src, parser.DefaultOption())
 	r := New(theme, width)
